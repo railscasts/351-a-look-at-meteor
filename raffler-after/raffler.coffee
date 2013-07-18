@@ -1,5 +1,11 @@
 Entries = new Meteor.Collection("entries")
 
+if Meteor.is_server
+  Meteor.startup ->
+    Meteor.methods
+      resetWinners: ->
+        Entries.update({recent: true}, {$set: {recent: false}}, {multi: true})
+
 if Meteor.is_client
   Template.raffle.entries = -> Entries.find()
   
@@ -12,8 +18,9 @@ if Meteor.is_client
     'click #draw': ->
       winner = _.shuffle(Entries.find(winner: {$ne: true}).fetch())[0]
       if winner
-        Entries.update({recent: true}, {$set: {recent: false}}, {multi: true})
+        Meteor.call 'resetWinners'
         Entries.update(winner._id, $set: {winner: true, recent: true})
   
   Template.entry.winner_class = ->
     if this.recent then 'highlight' else ''
+
